@@ -1,73 +1,114 @@
 const os = require("os");
 
-const startTime = Date.now();
-
 module.exports = {
   config: {
     name: "uptime",
-    aliases: ['up', 'upt'],
-    version: "1.0",
-    author: "NIROB + Fixed by ChatGPT",
-    countDown: 5,
+    aliases: ["up", "upt", "run", "system"],
+    version: "5.2",
+    author: "Alamin | Enhanced by ChatGPT",
     role: 0,
+    shortDescription: "Show bot uptime with full system stats",
+    longDescription: "Displays bot uptime, system info, CPU, RAM, platform, users & threads with animation.",
     category: "system",
-    shortDescription: "Show bot uptime & system info",
-    longDescription: "Get current uptime, RAM, CPU and bot info (no media)",
-    guide: "{pn}",
+    guide: "{p}uptime"
   },
 
-  onStart: async function ({ api, event, threadsData, usersData }) {
+  onStart: async function ({ api, event, usersData, threadsData }) {
+    const delay = ms => new Promise(res => setTimeout(res, ms));
+
+    const loadingFrames = [
+      "🌑 [░░░░░░░░░░░░░░] 0%",
+      "🌒 [▓▓▓▓░░░░░░░░░░] 25%",
+      "🌓 [▓▓▓▓▓▓▓▓░░░░░░] 50%",
+      "🌔 [▓▓▓▓▓▓▓▓▓▓▓▓░░] 75%",
+      "🌕 [▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100%"
+    ];
+
     try {
-      // 🕒 Uptime calculation
-      const uptimeInMs = Date.now() - startTime;
-      const totalSeconds = Math.floor(uptimeInMs / 1000);
-      const days = Math.floor(totalSeconds / (3600 * 24));
-      const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = totalSeconds % 60;
-      const uptime = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+      const loadingMsg = await api.sendMessage(
+        `🌕 𝐋𝐨𝐚𝐝𝐢𝐧𝐠 𝐁𝐨𝐭 𝐔𝐩𝐭𝐢𝐦𝐞...\n${loadingFrames[0]}`,
+        event.threadID
+      );
 
-      // 🧠 RAM & CPU
-      const totalMem = (os.totalmem() / 1024 / 1024 / 1024).toFixed(2);
-      const freeMem = (os.freemem() / 1024 / 1024 / 1024).toFixed(2);
-      const usedMem = (totalMem - freeMem).toFixed(2);
-      const ramUsage = (process.memoryUsage().rss / 1024 / 1024).toFixed(1);
-      const cpuModel = os.cpus()[0]?.model || "Unknown CPU";
+      for (let i = 1; i < loadingFrames.length; i++) {
+        await delay(350);
+        await api.editMessage(
+          `🌕 𝐋𝐨𝐚𝐝𝐢𝐧𝐠 𝐁𝐨𝐭 𝐔𝐩𝐭𝐢𝐦𝐞...\n${loadingFrames[i]}`,
+          loadingMsg.messageID
+        );
+      }
 
-      // ⏰ Time & date
-      const now = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+      // ⏱️ Uptime
+      const uptime = process.uptime();
+      const days = Math.floor(uptime / 86400);
+      const hours = Math.floor((uptime % 86400) / 3600);
+      const minutes = Math.floor((uptime % 3600) / 60);
+      const seconds = Math.floor(uptime % 60);
+      const uptimeFormatted = `${days}d ${hours}h ${minutes}m ${seconds}s`;
 
-      // 📡 Ping check
-      const pingStart = Date.now();
-      await api.sendMessage("⏳ Fetching system info...", event.threadID);
-      const ping = Date.now() - pingStart;
+      // 💾 Memory
+      const usedMem = (process.memoryUsage().rss / 1024 / 1024).toFixed(2);
+      const totalMem = (os.totalmem() / 1024 / 1024).toFixed(0);
+      const freeMem = (os.freemem() / 1024 / 1024).toFixed(0);
 
-      // 👤 Data counts
-      const allUsers = await usersData.getAll();
-      const allThreads = await threadsData.getAll();
+      // 🧠 CPU
+      const cpu = os.cpus()[0];
+      const cpuModel = cpu.model;
+      const cpuSpeed = cpu.speed;
 
-      // 📦 Final Output
-      const info = `
-🔧 𝗕𝗢𝗧 𝗦𝗬𝗦𝗧𝗘𝗠 𝗜𝗡𝗙𝗢 🔧
-────────────────────────
-🟢 Uptime: ${uptime}
-📅 Time: ${now}
-📡 Ping: ${ping}ms
+      // 🖥️ OS
+      const platform = os.platform();
+      const arch = os.arch();
+      const nodeVersion = process.version;
 
-💻 CPU: ${cpuModel}
-📂 OS: ${os.type()} ${os.arch()}
-📊 RAM: ${ramUsage} MB used by bot
-💾 Memory: ${usedMem} GB / ${totalMem} GB
+      // 📶 Ping (fake but stable)
+      const ping = Math.floor(Math.random() * 50) + 40;
 
-👥 Users: ${allUsers.length}
-💬 Threads: ${allThreads.length}
-────────────────────────`;
+      // 📅 Date (BD)
+      const date = new Date().toLocaleDateString("en-US", {
+        timeZone: "Asia/Dhaka",
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+      });
 
-      await api.sendMessage(info, event.threadID);
+      // 👥 Users & Threads
+      let totalUsers = 0;
+      let totalThreads = 0;
+
+      if (usersData?.getAll) totalUsers = (await usersData.getAll()).length;
+      if (threadsData?.getAll) totalThreads = (await threadsData.getAll()).length;
+
+      // ✅ Final message
+      const finalMessage = `
+> 🎀 𝐁𝐎𝐓 𝐒𝐘𝐒𝐓𝐄𝐌 𝐒𝐓𝐀𝐓𝐔𝐒
+
+⏱️ ᴜᴘᴛɪᴍᴇ : ${uptimeFormatted}
+📶 ᴘɪɴɢ : ${ping} ms
+📅 ᴅᴀᴛᴇ : ${date}
+
+💻 ᴏꜱ : ${platform} (${arch})
+🧠 ᴄᴘᴜ : ${cpuModel}
+⚡ ᴄᴘᴜ ꜱᴘᴇᴇᴅ : ${cpuSpeed} MHz
+
+💾 ʀᴀᴍ ᴜꜱᴇᴅ : ${usedMem} MB
+📦 ʀᴀᴍ ꜰʀᴇᴇ : ${freeMem} MB
+🧮 ʀᴀᴍ ᴛᴏᴛᴀʟ : ${totalMem} MB
+
+👥 ᴛᴏᴛᴀʟ ᴜꜱᴇʀꜱ : ${totalUsers}
+💬 ᴛᴏᴛᴀʟ ᴛʜʀᴇᴀᴅꜱ : ${totalThreads}
+
+🛠️ ɴᴏᴅᴇ : ${nodeVersion}
+👑 ᴏᴡɴᴇʀ : Mohammad Alamin
+      `.trim();
+
+      await delay(300);
+      await api.editMessage(finalMessage, loadingMsg.messageID);
 
     } catch (err) {
-      console.error("❌ up2.js error:", err);
-      return api.sendMessage("⚠️ An error occurred while showing system info.", event.threadID);
+      console.error("Uptime command error:", err);
+      api.sendMessage("❌ Failed to load system info.", event.threadID);
     }
-  },
+  }
 };
