@@ -1,0 +1,72 @@
+# .github/workflows/run-anything.yml
+name: Run Any Code
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  run-any-code:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lang: [python, node, bash, ruby, php, java, go, c, cpp]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Environment
+        run: |
+          echo "Preparing environment for ${{ matrix.lang }}"
+
+      - name: Run Python Scripts
+        if: matrix.lang == 'python'
+        run: |
+          find . -name "*.py" -exec python3 {} \;
+
+      - name: Run Node.js Scripts
+        if: matrix.lang == 'node'
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Execute Node.js Files
+        if: matrix.lang == 'node'
+        run: |
+          find . -name "*.js" -exec node {} \;
+
+      - name: Run Bash Scripts
+        if: matrix.lang == 'bash'
+        run: |
+          find . -name "*.sh" -exec bash {} \;
+
+      - name: Run Ruby Scripts
+        if: matrix.lang == 'ruby'
+        run: |
+          find . -name "*.rb" -exec ruby {} \;
+
+      - name: Run PHP Scripts
+        if: matrix.lang == 'php'
+        run: |
+          find . -name "*.php" -exec php {} \;
+
+      - name: Run Java Scripts
+        if: matrix.lang == 'java'
+        run: |
+          find . -name "*.java" -exec javac {} \; -exec java {} \;
+
+      - name: Run Go Scripts
+        if: matrix.lang == 'go'
+        run: |
+          find . -name "*.go" -exec go run {} \;
+
+      - name: Run C/C++ Scripts
+        if: matrix.lang == 'c' || matrix.lang == 'cpp'
+        run: |
+          for file in $(find . -name "*.c" -o -name "*.cpp"); do
+            g++ "$file" -o "${file%.*}.out" && ./"${file%.*}.out"
+          done
+
+      - name: Finished
+        run: echo "✅ All detected scripts executed successfully."
