@@ -1,0 +1,68 @@
+name: Run Any Code
+
+on:
+  push:
+    branches: [ "**" ]  # يعمل على أي فرع
+  workflow_dispatch:   # يمكن تشغيله يدويًا من GitHub
+
+jobs:
+  run-code:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: [ "node", "python", "java", "go", "ruby", "bash" ] # دعم جميع اللغات الشائعة
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up ${{ matrix.language }}
+      run: |
+        if [ "${{ matrix.language }}" == "node" ]; then
+          echo "Setting up Node.js..."
+          sudo apt-get update
+          sudo apt-get install -y nodejs npm
+        elif [ "${{ matrix.language }}" == "python" ]; then
+          echo "Setting up Python..."
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip
+        elif [ "${{ matrix.language }}" == "java" ]; then
+          echo "Setting up Java..."
+          sudo apt-get update
+          sudo apt-get install -y default-jdk
+        elif [ "${{ matrix.language }}" == "go" ]; then
+          echo "Setting up Go..."
+          sudo apt-get update
+          sudo apt-get install -y golang
+        elif [ "${{ matrix.language }}" == "ruby" ]; then
+          echo "Setting up Ruby..."
+          sudo apt-get update
+          sudo apt-get install -y ruby-full
+        elif [ "${{ matrix.language }}" == "bash" ]; then
+          echo "Bash is ready by default"
+        fi
+
+    - name: Install dependencies
+      run: |
+        if [ "${{ matrix.language }}" == "node" ]; then
+          npm install
+        elif [ "${{ matrix.language }}" == "python" ]; then
+          if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
+        fi
+
+    - name: Run your code
+      run: |
+        echo "Running your ${{ matrix.language }} code..."
+        if [ "${{ matrix.language }}" == "node" ]; then
+          node index.js || echo "No index.js found"
+        elif [ "${{ matrix.language }}" == "python" ]; then
+          python3 main.py || echo "No main.py found"
+        elif [ "${{ matrix.language }}" == "java" ]; then
+          javac Main.java && java Main || echo "No Main.java found"
+        elif [ "${{ matrix.language }}" == "go" ]; then
+          go run main.go || echo "No main.go found"
+        elif [ "${{ matrix.language }}" == "ruby" ]; then
+          ruby main.rb || echo "No main.rb found"
+        elif [ "${{ matrix.language }}" == "bash" ]; then
+          bash run.sh || echo "No run.sh found"
+        fi
